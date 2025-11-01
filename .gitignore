@@ -20,3 +20,10 @@ dist/
 .idea/
 .vscode/
 
+# data (too big to push to github)
+app/data/actions.csv
+app/data/players.csv
+app/data/teams.csv
+app/data/games.csv
+app/data/spadl_explanation.txt
+

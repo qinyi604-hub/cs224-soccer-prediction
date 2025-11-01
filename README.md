@@ -8,6 +8,7 @@ Hello World
 
 ## Prerequisites
 - Python 3.9.x installed (recommended via pyenv or your system package manager)
+- pip available in your environment
 
 ## Setup
 1. Create and activate a virtual environment (Python 3.9):
@@ -21,6 +22,11 @@ Hello World
 2. Verify the Python version:
    ```bash
    python --version  # Should show Python 3.9.x
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
    ```
 
 ## Run
