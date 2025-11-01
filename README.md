@@ -29,6 +29,12 @@ Hello World
    pip install -r requirements.txt
    ```
 
+## Data
+- **Datasets**: `actions.csv`, `games.csv`, `players.csv`, `teams.csv`.
+- **Git tracking**: These files are large and are excluded via `.gitignore`.
+- **Download**: Get them from Kaggle: [Soccer Match Event Dataset](https://www.kaggle.com/datasets/aleespinosa/soccer-match-event-dataset).
+- **Placement**: Put the four CSVs into the `app/data` directory so the code can find them.
+
 ## Run
 From the project root:
 ```bash
