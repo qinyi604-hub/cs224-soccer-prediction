@@ -1,10 +1,6 @@
-# cs224_soccer_prediction — Python 3.9 scaffold
+# cs224_soccer_prediction
 
-This is a minimal Python 3.9 project scaffold. Running the project prints:
-
-```
-Hello World
-```
+This is a Python 3.9 project for cs224W.
 
 ## Prerequisites
 - Python 3.9.x installed (recommended via pyenv or your system package manager)
@@ -28,6 +24,12 @@ Hello World
    ```bash
    pip install -r requirements.txt
    ```
+
+## Data
+- **Datasets**: `actions.csv`, `games.csv`, `players.csv`, `teams.csv`.
+- **Git tracking**: These files are large and are excluded via `.gitignore`.
+- **Download**: Get them from Kaggle: [Soccer Match Event Dataset](https://www.kaggle.com/datasets/aleespinosa/soccer-match-event-dataset).
+- **Placement**: Put the four CSVs into the `app/data` directory so the code can find them.
 
 ## Run
 From the project root:
