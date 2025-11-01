@@ -1,0 +1,69 @@
+SPADL
+Definitions
+SPADL (Soccer Player Action Description Language) represents a game as a sequence of on-the-ball actions 
+, where 
+ is the total number of actions that happened in the game. Each action is a tuple of the same twelve attributes:
+
+Attribute Description:
+
+game_id
+
+the ID of the game in which the action was performed
+
+period_id
+
+the ID of the game period in which the action was performed. It takes value 1 or 2, where 1 represents the first half and 2 represents the second half. 
+
+time_seconds
+
+the action’s start time. In spadl, it is time elapsed in seconds from the beginning of a specific half. One half is 45 minutes (2700 seconds), but this value can exceed 2700 due to stoppage time.  
+
+player_id
+
+the player who performed the action
+
+team_id
+
+the player’s team
+
+start_x
+
+the x location where the action started
+
+start_y
+
+the y location where the action started
+
+end_x
+
+the x location where the action ended
+
+end_y
+
+the y location where the action ended
+
+type_name
+
+the type of the action (e.g., pass, shot, dribble)
+
+result_name
+
+the result of the action (e.g., success or fail)
+
+bodypart_name
+
+the player’s body part used for the action
+
+Start and End Locations
+SPADL uses a standardized coordinate system with the origin on the bottom left of the pitch, and a uniform field of 105m x 68m. For direction of play, SPADL uses the “home team attacks to the right” convention, but this can be converted conveniently with the play_left_to_right() function such that the lower x-coordinates represent the own half of the team performing the action.
+
+type_name
+The type_name attribute can have 22 possible values. These are pass, cross, throw-in, crossed free kick, short free kick, crossed corner, short corner, take-on, foul, tackle, interception, shot, penalty shot, free kick shot, keeper save, keeper claim, keeper punch, keeper pick-up, clearance, bad touch, dribble and goal kick. A detailed definition of each action type is available here.
+
+result_name
+The result_name attribute can either have the value success, to indicate that an action achieved it’s intended result; or the value fail, if this was not the case. An example of a successful action is a pass which reaches a teammate. An example of an unsuccessful action is a pass which goes over the sideline. Some action types can have special results. These are offside (for passes, corners and free-kicks), own goal (for shots), and yellow card and red card (for fouls).
+
+bodypart_name
+The bodypart_name attribute can have 4 possible values. These are foot, head, other and none. For Wyscout, which does not distinguish between the head and other body parts a special body part head/other is used.
+
+All actions, except for some dribbles, are derived from an event in the original event stream data. They can be linked back to the original data by the original_event_id attribute. Synthetic dribbles are added to fill gaps between two events. These synthetic dribbles do not have an original_event_id.
