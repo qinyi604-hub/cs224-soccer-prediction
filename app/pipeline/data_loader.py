@@ -62,13 +62,18 @@ class DataCsvLoader:
         csv_path = self.data_dir / "actions.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found at: {csv_path}")
-        return pd.read_csv(
+        df = pd.read_csv(
             csv_path,
             usecols=columns,
             dtype=dtype_map,
             nrows=nrows,
             low_memory=False,
         )
+        # Normalize ID columns to integer-like strings (e.g., 1234.0 -> "1234")
+        for col in ["game_id", "team_id", "player_id"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64").astype("string")
+        return df
 
     def load_players(self, nrows: Optional[int] = None) -> pd.DataFrame:
         columns = [
@@ -100,13 +105,20 @@ class DataCsvLoader:
         csv_path = self.data_dir / "players.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found at: {csv_path}")
-        return pd.read_csv(
+        df = pd.read_csv(
             csv_path,
             usecols=columns,
             dtype=dtype_map,
             nrows=nrows,
             low_memory=False,
         )
+        # Normalize ID columns to integer-like strings (e.g., 4502.0 -> "4502")
+        if "wyId" in df.columns:
+            df["wyId"] = pd.to_numeric(df["wyId"], errors="coerce").astype("Int64").astype("string")
+        for col in ["currentTeamId", "currentNationalTeamId"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64").astype("string")
+        return df
 
     def load_teams(self, nrows: Optional[int] = None) -> pd.DataFrame:
         columns = [
@@ -126,13 +138,16 @@ class DataCsvLoader:
         csv_path = self.data_dir / "teams.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found at: {csv_path}")
-        return pd.read_csv(
+        df = pd.read_csv(
             csv_path,
             usecols=columns,
             dtype=dtype_map,
             nrows=nrows,
             low_memory=False,
         )
+        if "wyId" in df.columns:
+            df["wyId"] = pd.to_numeric(df["wyId"], errors="coerce").astype("Int64").astype("string")
+        return df
 
     def load_games(self, nrows: Optional[int] = None) -> pd.DataFrame:
         columns = [
@@ -156,12 +171,16 @@ class DataCsvLoader:
         csv_path = self.data_dir / "games.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found at: {csv_path}")
-        return pd.read_csv(
+        df = pd.read_csv(
             csv_path,
             usecols=columns,
             dtype=dtype_map,
             nrows=nrows,
             low_memory=False,
         )
+        for col in ["game_id", "competition_id", "season_id", "home_team_id", "away_team_id"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64").astype("string")
+        return df
 
 

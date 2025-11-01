@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 @dataclass(frozen=True)
@@ -75,6 +75,10 @@ class GraphConfig:
     games_away_team_id_col: str = "away_team_id"
 
     # Sampling controls
-    num_games: int | None = 3
+    num_games: Optional[int] = 1
     random_seed: int = 42
+
+    # Unknown player handling
+    include_unknown_player_node: bool = True
+    unknown_player_id: str = "0"
 

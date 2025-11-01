@@ -109,6 +109,7 @@ class HeteroGraphBuilder:
 
         # Player -> Start_Action and Player -> End_Action
         player_ids = actions[cfg.actions_player_id_col].astype("string")
+
         src_player_idx = []
         dst_start_idx = []
         dst_end_idx = []
@@ -138,23 +139,32 @@ class HeteroGraphBuilder:
         src_player = []
         dst_team = []
 
-        # club membership
-        for _, row in players[[cfg.players_id_col, "currentTeamId"]].astype("string").iterrows():
-            t_id = row["currentTeamId"]
-            p_id = row[cfg.players_id_col]
-            t_idx = team_id_to_idx.get(t_id)
-            p_idx = player_id_to_idx.get(p_id)
-            if t_idx is not None and p_idx is not None:
-                src_player.append(p_idx)
-                dst_team.append(t_idx)
+        # Normalize team IDs that may be float-like (e.g., '4502.0') to integer strings ('4502')
+        def normalize_team_id_series(series: pd.Series) -> pd.Series:
+            # Convert to numeric, drop NaNs, then to pandas nullable Int64, then to string
+            numeric = pd.to_numeric(series, errors="coerce")
+            return numeric.astype("Int64").astype("string")
 
-        # national team membership
+        player_ids = players[cfg.players_id_col].astype("string")
+
+        if "currentTeamId" in players.columns:
+            cteam_series = normalize_team_id_series(players["currentTeamId"])
+            for p_id, t_id in zip(player_ids, cteam_series):
+                if pd.isna(t_id):
+                    continue
+                t_idx = team_id_to_idx.get(str(t_id))
+                p_idx = player_id_to_idx.get(str(p_id))
+                if t_idx is not None and p_idx is not None:
+                    src_player.append(p_idx)
+                    dst_team.append(t_idx)
+
         if "currentNationalTeamId" in players.columns:
-            for _, row in players[[cfg.players_id_col, "currentNationalTeamId"]].astype("string").iterrows():
-                t_id = row["currentNationalTeamId"]
-                p_id = row[cfg.players_id_col]
-                t_idx = team_id_to_idx.get(t_id)
-                p_idx = player_id_to_idx.get(p_id)
+            cnat_series = normalize_team_id_series(players["currentNationalTeamId"])
+            for p_id, t_id in zip(player_ids, cnat_series):
+                if pd.isna(t_id):
+                    continue
+                t_idx = team_id_to_idx.get(str(t_id))
+                p_idx = player_id_to_idx.get(str(p_id))
                 if t_idx is not None and p_idx is not None:
                     src_player.append(p_idx)
                     dst_team.append(t_idx)
@@ -178,6 +188,8 @@ class HeteroGraphBuilder:
         # Load actions and filter to selected games for consistency
         actions_all = self.loader.load_actions()
         actions = actions_all[actions_all[cfg.actions_game_id_col].astype("string").isin(selected_game_ids)].copy()
+        # Ensure a clean, 0..N-1 index so derived Series align by index when constructing DataFrames
+        actions = actions.reset_index(drop=True)
 
         # Identify players and teams referenced by the filtered actions/games
         player_ids_needed = set(actions[cfg.actions_player_id_col].astype("string").dropna().unique().tolist())
@@ -205,6 +217,15 @@ class HeteroGraphBuilder:
         # Build nodes
         start_df, end_df = self._build_action_nodes(actions, games)
         player_df, player_id_to_idx = self._build_player_nodes(players)
+        # Optionally inject an unknown player node for actions with placeholder player_id (e.g., "0")
+        if self.config.include_unknown_player_node:
+            unknown_id = self.config.unknown_player_id
+            action_pids = set(actions[self.config.actions_player_id_col].astype("string").dropna().unique().tolist())
+            if unknown_id in action_pids and unknown_id not in player_id_to_idx:
+                # Create an empty/unknown row matching player feature columns
+                empty_row = {col: pd.NA for col in player_df.columns}
+                player_df = pd.concat([player_df, pd.DataFrame([empty_row])], ignore_index=True)
+                player_id_to_idx[unknown_id] = len(player_df) - 1
         team_df, team_id_to_idx = self._build_team_nodes(teams)
 
         # Edges
