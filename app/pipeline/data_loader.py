@@ -30,15 +30,138 @@ class DataCsvLoader:
         return pd.read_csv(csv_path, nrows=nrows, low_memory=False)
 
     def load_actions(self, nrows: Optional[int] = None) -> pd.DataFrame:
-        return self.load("actions.csv", nrows=nrows)
+        # Only keep SPADL columns defined in spadl_explanation.txt and enforce types
+        columns = [
+            "game_id",
+            "period_id",
+            "time_seconds",
+            "team_id",
+            "player_id",
+            "start_x",
+            "start_y",
+            "end_x",
+            "end_y",
+            "type_name",
+            "result_name",
+            "bodypart_name",
+        ]
+        dtype_map = {
+            "game_id": "string",
+            "period_id": "int64",
+            "time_seconds": "float64",
+            "team_id": "string",
+            "player_id": "string",
+            "start_x": "float64",
+            "start_y": "float64",
+            "end_x": "float64",
+            "end_y": "float64",
+            "type_name": "string",
+            "result_name": "string",
+            "bodypart_name": "string",
+        }
+        csv_path = self.data_dir / "actions.csv"
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV not found at: {csv_path}")
+        return pd.read_csv(
+            csv_path,
+            usecols=columns,
+            dtype=dtype_map,
+            nrows=nrows,
+            low_memory=False,
+        )
 
     def load_players(self, nrows: Optional[int] = None) -> pd.DataFrame:
-        return self.load("players.csv", nrows=nrows)
+        columns = [
+            "passportArea",
+            "weight",
+            "firstName",
+            "lastName",
+            "currentTeamId",
+            "birthDate",
+            "height",
+            "role",
+            "wyId",
+            "foot",
+            "currentNationalTeamId",
+        ]
+        dtype_map = {
+            "passportArea": "string",
+            "weight": "int64",
+            "firstName": "string",
+            "lastName": "string",
+            "currentTeamId": "string",
+            "birthDate": "string",
+            "height": "int64",
+            "role": "string",
+            "wyId": "string",
+            "foot": "string",
+            "currentNationalTeamId": "string",
+        }
+        csv_path = self.data_dir / "players.csv"
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV not found at: {csv_path}")
+        return pd.read_csv(
+            csv_path,
+            usecols=columns,
+            dtype=dtype_map,
+            nrows=nrows,
+            low_memory=False,
+        )
 
     def load_teams(self, nrows: Optional[int] = None) -> pd.DataFrame:
-        return self.load("teams.csv", nrows=nrows)
+        columns = [
+            "city",
+            "wyId",
+            "officialName",
+            "area",
+            "type",
+        ]
+        dtype_map = {
+            "city": "string",
+            "wyId": "string",
+            "officialName": "string",
+            "area": "string",
+            "type": "string",
+        }
+        csv_path = self.data_dir / "teams.csv"
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV not found at: {csv_path}")
+        return pd.read_csv(
+            csv_path,
+            usecols=columns,
+            dtype=dtype_map,
+            nrows=nrows,
+            low_memory=False,
+        )
 
     def load_games(self, nrows: Optional[int] = None) -> pd.DataFrame:
-        return self.load("games.csv", nrows=nrows)
+        columns = [
+            "game_id",
+            "competition_id",
+            "season_id",
+            "game_date",
+            "game_day",
+            "home_team_id",
+            "away_team_id",
+        ]
+        dtype_map = {
+            "game_id": "string",
+            "competition_id": "string",
+            "season_id": "string",
+            "game_date": "string",
+            "game_day": "int64",
+            "home_team_id": "string",
+            "away_team_id": "string",
+        }
+        csv_path = self.data_dir / "games.csv"
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV not found at: {csv_path}")
+        return pd.read_csv(
+            csv_path,
+            usecols=columns,
+            dtype=dtype_map,
+            nrows=nrows,
+            low_memory=False,
+        )
 
 

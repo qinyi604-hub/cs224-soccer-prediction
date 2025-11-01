@@ -1,10 +1,6 @@
-# cs224_soccer_prediction — Python 3.9 scaffold
+# cs224_soccer_prediction
 
-This is a minimal Python 3.9 project scaffold. Running the project prints:
-
-```
-Hello World
-```
+This is a Python 3.9 project for cs224W.
 
 ## Prerequisites
 - Python 3.9.x installed (recommended via pyenv or your system package manager)
