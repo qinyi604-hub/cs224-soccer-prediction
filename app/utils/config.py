@@ -77,7 +77,7 @@ class GraphConfig:
     games_away_team_id_col: str = "away_team_id"
 
     # Sampling controls
-    num_games: Optional[int] = 50
+    num_games: Optional[int] = 80
     random_seed: int = 42
 
     # Unknown player handling

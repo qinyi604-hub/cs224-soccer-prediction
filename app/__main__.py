@@ -1,17 +1,18 @@
 from app.relational_nn.pipeline_runner import PipelineRunner
 from app.utils.data_loader import DataCsvLoader
 from app.utils.graph_visualizer import GraphVisualizer
+from app.transformer_based_next_action.pipeline_runner import TransformerRunner
 import argparse
 import sys
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run model pipelines")
+    parser = argparse.ArgumentParser(description="Run model pipelines (relational_nn or transformer_based_next_action)")
     parser.add_argument(
         "--model",
         type=str,
         default="relational_nn",
-        help="Model to run (e.g., relational_nn)",
+        help="Model to run: relational_nn | transformer_based_next_action",
     )
     args = parser.parse_args(sys.argv[1:])
 
@@ -44,8 +45,11 @@ def main() -> None:
         runner.train_demo()
         # Graph visualization (small subset)
         GraphVisualizer().visualize_graph(graph, max_actions=150)
+    elif args.model == "transformer_based_next_action":
+        acc = TransformerRunner().train(k=32, epochs=10, batch_size=128, lr=1e-3)
+        print(f"Transformer baseline validation accuracy: {acc:.3f}")
     else:
-        print(f"Unknown model: {args.model}. Supported: relational_nn")
+        print(f"Unknown model: {args.model}. Supported: relational_nn, transformer_based_next_action")
 
 
 if __name__ == "__main__":

@@ -83,24 +83,21 @@ class RelGraphSAGE(nn.Module):
         h_dict = self._build_x(x_dict, data)
 
         for _ in range(self.num_layers):
-            # Use edge-aware conv only for 'followedBy' edges (with delta_t); others use SAGEConv
-            conv_map = {}
-            for edge_type in data.edge_types:
-                src, rel, dst = edge_type
-                if rel.startswith("followedBy"):
-                    conv_map[edge_type] = TransformerConv((-1, -1), self.hidden_dim, heads=1, edge_dim=1)
-                else:
-                    conv_map[edge_type] = SAGEConv((-1, -1), self.hidden_dim)
+            # Graph-Transformer style: use TransformerConv on all relations with 1-d edge_attr
+            conv_map = {
+                edge_type: TransformerConv((-1, -1), self.hidden_dim, heads=1, edge_dim=1)
+                for edge_type in data.edge_types
+            }
             conv = HeteroConv(conv_map, aggr="sum").to(h_dict["End_Action"].device)
 
             edge_attr_dict = {}
             for edge_type in data.edge_types:
                 if hasattr(data[edge_type], 'edge_attr') and data[edge_type].edge_attr is not None:
                     edge_attr_dict[edge_type] = data[edge_type].edge_attr
-            # Ensure edge_attr exists for all followedBy relations (required by TransformerConv)
+            # Ensure edge_attr exists for all relations (required by TransformerConv)
             for edge_type in data.edge_types:
-                src, rel, dst = edge_type
-                if rel.startswith("followedBy") and edge_type not in edge_attr_dict:
+                if edge_type not in edge_attr_dict:
+                    dst = edge_type[2]
                     E = data[edge_type].edge_index.size(1)
                     edge_attr_dict[edge_type] = torch.zeros((E, 1), dtype=torch.float32, device=h_dict[dst].device)
 
