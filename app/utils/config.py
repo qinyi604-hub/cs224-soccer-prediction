@@ -7,15 +7,19 @@ class GraphConfig:
     # Node type names
     node_type_start_action: str = "Start_Action"
     node_type_end_action: str = "End_Action"
+    node_type_action: str = "Action"
     node_type_player: str = "Player"
     node_type_team: str = "Team"
 
     # Edge (src, relation, dst)
     edge_player_to_start: Tuple[str, str, str] = ("Player", "performed", "Start_Action")
     edge_player_to_end: Tuple[str, str, str] = ("Player", "performed", "End_Action")
+    edge_player_to_action: Tuple[str, str, str] = ("Player", "performed", "Action")
     edge_player_to_team: Tuple[str, str, str] = ("Player", "member_of", "Team")
     # End of action A followed by start of action B (same game and period, immediate successor)
     edge_followed_by: Tuple[str, str, str] = ("End_Action", "followedBy", "Start_Action")
+    # Single-node graph temporal edge: Action A -> Action B
+    edge_followed_by_action: Tuple[str, str, str] = ("Action", "followedBy", "Action")
 
     # Feature columns to select from each table
     start_action_features: List[str] = field(
@@ -27,6 +31,21 @@ class GraphConfig:
             "type_name",
             "bodypart_name",
             # computed feature (represents whether the action was performed by the home team)
+            "is_home_team",
+        ]
+    )
+    # Single Action node features
+    action_features: List[str] = field(
+        default_factory=lambda: [
+            "period_id",
+            "time_seconds",
+            "start_x",
+            "start_y",
+            "end_x",
+            "end_y",
+            "type_name",
+            "result_name",
+            "bodypart_name",
             "is_home_team",
         ]
     )

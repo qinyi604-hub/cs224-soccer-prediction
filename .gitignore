@@ -2,6 +2,8 @@
 .venv/
 venv/
 ENV/
+.venv_py312/
+.venv_py311/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -14,6 +14,13 @@ def main() -> None:
         default="relational_nn",
         help="Model to run: relational_nn | transformer_based_next_action",
     )
+    parser.add_argument(
+        "--graph_mode",
+        type=str,
+        default="dual",
+        choices=["dual", "single"],
+        help="Graph builder: 'dual' uses Start/End nodes; 'single' uses one Action node per row",
+    )
     args = parser.parse_args(sys.argv[1:])
 
     # Quick verification: print one row from each loaded DataFrame
@@ -46,8 +53,8 @@ def main() -> None:
         # Graph visualization (small subset)
         GraphVisualizer().visualize_graph(graph, max_actions=150)
     elif args.model == "transformer_based_next_action":
-        acc = TransformerRunner().train(k=32, epochs=10, batch_size=128, lr=1e-3)
-        print(f"Transformer baseline validation accuracy: {acc:.3f}")
+        acc = TransformerRunner().train_graph_transformer(epochs=50, lr=1e-3, num_layers=5, graph_mode=args.graph_mode)
+        print(f"Graph Transformer validation accuracy: {acc:.3f}")
     else:
         print(f"Unknown model: {args.model}. Supported: relational_nn, transformer_based_next_action")
 
