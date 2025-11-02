@@ -172,6 +172,42 @@ class HeteroGraphBuilder:
         edge_player_to_team = torch.tensor([src_player, dst_team], dtype=torch.long) if src_player else torch.empty((2, 0), dtype=torch.long)
         return {self.config.edge_player_to_team: edge_player_to_team}
 
+    def _build_followed_by_edges(self, actions: pd.DataFrame) -> Dict[Tuple[str, str, str], torch.Tensor]:
+        # Build End_Action (A) -> Start_Action (B) edges for consecutive actions within the same game and period
+        if actions.empty:
+            return {self.config.edge_followed_by: torch.empty((2, 0), dtype=torch.long)}
+
+        # Use the current index as the node index for Start_Action
+        actions_with_index = actions[[
+            self.config.actions_game_id_col,
+            "period_id",
+            "time_seconds",
+        ]].copy()
+        actions_with_index["_idx"] = actions.index
+
+        # Sources correspond to End_Action indices of A; destinations to Start_Action indices of B.
+        # Since both Start_Action and End_Action rows align 1:1 with action indices, we reuse the action indices.
+        src_idx: list[int] = []
+        dst_idx: list[int] = []
+
+        grouped = actions_with_index.sort_values([self.config.actions_game_id_col, "period_id", "time_seconds", "_idx"]).groupby([
+            self.config.actions_game_id_col,
+            "period_id",
+        ], sort=False)
+
+        for _, g in grouped:
+            order = g["_idx"].to_list()
+            if len(order) <= 1:
+                continue
+            # consecutive pairs: A -> B (End_Action A -> Start_Action B). 
+            # src_idx.extend(order[:-1]) collects the indices of each action A except the last.
+            # dst_idx.extend(order[1:]) collects the indices of each action B except the first.
+            src_idx.extend(order[:-1])
+            dst_idx.extend(order[1:])
+
+        edge_followed_by = torch.tensor([src_idx, dst_idx], dtype=torch.long) if src_idx else torch.empty((2, 0), dtype=torch.long)
+        return {self.config.edge_followed_by: edge_followed_by}
+
     def build(self) -> HeteroGraph:
         cfg = self.config
 
@@ -223,14 +259,16 @@ class HeteroGraphBuilder:
             action_pids = set(actions[self.config.actions_player_id_col].astype("string").dropna().unique().tolist())
             if unknown_id in action_pids and unknown_id not in player_id_to_idx:
                 # Create an empty/unknown row matching player feature columns
-                empty_row = {col: pd.NA for col in player_df.columns}
-                player_df = pd.concat([player_df, pd.DataFrame([empty_row])], ignore_index=True)
-                player_id_to_idx[unknown_id] = len(player_df) - 1
+                new_index = len(player_df)
+                # Expand index to add a new empty row without triggering concat warnings
+                player_df = player_df.reindex(player_df.index.tolist() + [new_index])
+                player_id_to_idx[unknown_id] = new_index
         team_df, team_id_to_idx = self._build_team_nodes(teams)
 
         # Edges
         edges = self._build_edges(actions, player_id_to_idx)
         edges.update(self._build_team_player_edges(players, team_id_to_idx, player_id_to_idx))
+        edges.update(self._build_followed_by_edges(actions))
 
         nodes = {
             self.config.node_type_start_action: start_df,
