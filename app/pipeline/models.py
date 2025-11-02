@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
-from torch_geometric.nn import HeteroConv, SAGEConv
+from torch_geometric.nn import HeteroConv, SAGEConv, TransformerConv
 
 
 class RelGraphSAGE(nn.Module):
@@ -83,12 +83,28 @@ class RelGraphSAGE(nn.Module):
         h_dict = self._build_x(x_dict, data)
 
         for _ in range(self.num_layers):
-            # Build conv only over present edge types to avoid None edge_index issues
-            conv = HeteroConv({
-                edge_type: SAGEConv((-1, -1), self.hidden_dim)
-                for edge_type in data.edge_types
-            }, aggr="sum").to(h_dict["End_Action"].device)
-            updated = conv(h_dict, data.edge_index_dict)
+            # Use edge-aware conv only for 'followedBy' edges (with delta_t); others use SAGEConv
+            conv_map = {}
+            for edge_type in data.edge_types:
+                src, rel, dst = edge_type
+                if rel.startswith("followedBy"):
+                    conv_map[edge_type] = TransformerConv((-1, -1), self.hidden_dim, heads=1, edge_dim=1)
+                else:
+                    conv_map[edge_type] = SAGEConv((-1, -1), self.hidden_dim)
+            conv = HeteroConv(conv_map, aggr="sum").to(h_dict["End_Action"].device)
+
+            edge_attr_dict = {}
+            for edge_type in data.edge_types:
+                if hasattr(data[edge_type], 'edge_attr') and data[edge_type].edge_attr is not None:
+                    edge_attr_dict[edge_type] = data[edge_type].edge_attr
+            # Ensure edge_attr exists for all followedBy relations (required by TransformerConv)
+            for edge_type in data.edge_types:
+                src, rel, dst = edge_type
+                if rel.startswith("followedBy") and edge_type not in edge_attr_dict:
+                    E = data[edge_type].edge_index.size(1)
+                    edge_attr_dict[edge_type] = torch.zeros((E, 1), dtype=torch.float32, device=h_dict[dst].device)
+
+            updated = conv(h_dict, data.edge_index_dict, edge_attr_dict=edge_attr_dict)
             # Carry forward representations for node types that are not destinations
             for ntype, x in h_dict.items():
                 if ntype not in updated:
