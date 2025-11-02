@@ -14,6 +14,8 @@ class GraphConfig:
     edge_player_to_start: Tuple[str, str, str] = ("Player", "performed", "Start_Action")
     edge_player_to_end: Tuple[str, str, str] = ("Player", "performed", "End_Action")
     edge_player_to_team: Tuple[str, str, str] = ("Player", "member_of", "Team")
+    # End of action A followed by start of action B (same game and period, immediate successor)
+    edge_followed_by: Tuple[str, str, str] = ("End_Action", "followedBy", "Start_Action")
 
     # Feature columns to select from each table
     start_action_features: List[str] = field(
@@ -75,7 +77,7 @@ class GraphConfig:
     games_away_team_id_col: str = "away_team_id"
 
     # Sampling controls
-    num_games: Optional[int] = 1
+    num_games: Optional[int] = 50
     random_seed: int = 42
 
     # Unknown player handling

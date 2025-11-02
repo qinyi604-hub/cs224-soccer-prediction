@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional, Tuple
 
 from .data_loader import DataCsvLoader
 from .graph_builder import HeteroGraph, HeteroGraphBuilder
+from .pyg_builder import build_pyg_data
+from .trainer import train_next_action_model
 
 
 class PipelineRunner:
@@ -28,5 +30,15 @@ class PipelineRunner:
             "edge_counts": edge_counts,
             "edge_types": list(edge_counts.keys()),
         }
+
+    def train_demo(self) -> None:
+        # Build graph and convert to PyG HeteroData
+        graph = self.build_graph()
+        data, vocab = build_pyg_data(graph)
+        # Train a tiny model for a few epochs and print val accuracy
+        _, acc = train_next_action_model(data, vocab, epochs=100, lr=1e-3)
+        print(f"Validation accuracy (next action type): {acc:.3f}")
+
+    
 
 
