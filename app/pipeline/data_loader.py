@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional
+import ast
 
 import pandas as pd
 
@@ -21,6 +22,22 @@ class DataCsvLoader:
         self.data_dir: Path = Path(data_dir)
         if not self.data_dir.exists():
             raise FileNotFoundError(f"Data directory not found: {self.data_dir}")
+
+    # --- Helpers: JSON-like string parsing to extract `name` field ---
+    @staticmethod
+    def _parse_literal_name(value, field: str = "name"):
+        if pd.isna(value):
+            return pd.NA
+        try:
+            parsed = ast.literal_eval(value) if isinstance(value, str) else value
+            val = parsed.get(field) if isinstance(parsed, dict) else None
+            return str(val) if val is not None else pd.NA
+        except Exception:
+            return pd.NA
+
+    @classmethod
+    def extract_literal_field(cls, series: pd.Series, field: str = "name") -> pd.Series:
+        return series.apply(lambda v: cls._parse_literal_name(v, field=field))
 
     def load(self, csv_filename: str, nrows: Optional[int] = None) -> pd.DataFrame:
         """Generic CSV loader. Optionally limit rows with nrows for quick previews."""
@@ -112,6 +129,11 @@ class DataCsvLoader:
             nrows=nrows,
             low_memory=False,
         )
+        # Extract passportArea.name and role.name
+        if "passportArea" in df.columns:
+            df["passportArea"] = self.extract_literal_field(df["passportArea"], field="name").astype("string")
+        if "role" in df.columns:
+            df["role"] = self.extract_literal_field(df["role"], field="name").astype("string")
         # Normalize ID columns to integer-like strings (e.g., 4502.0 -> "4502")
         if "wyId" in df.columns:
             df["wyId"] = pd.to_numeric(df["wyId"], errors="coerce").astype("Int64").astype("string")
@@ -145,6 +167,9 @@ class DataCsvLoader:
             nrows=nrows,
             low_memory=False,
         )
+        # Extract area.name
+        if "area" in df.columns:
+            df["area"] = self.extract_literal_field(df["area"], field="name").astype("string")
         if "wyId" in df.columns:
             df["wyId"] = pd.to_numeric(df["wyId"], errors="coerce").astype("Int64").astype("string")
         return df
