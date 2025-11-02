@@ -55,6 +55,11 @@ def build_pyg_data(graph: HeteroGraph) -> Tuple[HeteroData, Dict[str, Dict[str, 
         for (src, rel, dst), edge_index in graph.edges.items():
             data[(src, rel, dst)].edge_index = edge_index
 
+        # Add reverse Team->Player so sampler can reach Team from Player at next hop
+        if ("Player", "member_of", "Team") in data.edge_types:
+            ei = data[("Player", "member_of", "Team")].edge_index
+            data[("Team", "has_member", "Player")].edge_index = ei.flip(0)
+
         # Temporal edge features and reverse
         if ("Action", "followedBy", "Action") in data.edge_types:
             import numpy as np

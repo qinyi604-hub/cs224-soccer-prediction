@@ -93,7 +93,7 @@ class RelGraphSAGE(nn.Module):
                     edge_dims[edge_type] = 1
 
             conv_map = {
-                edge_type: TransformerConv((-1, -1), self.hidden_dim, heads=1, edge_dim=edge_dims[edge_type])
+                edge_type: TransformerConv((-1, -1), self.hidden_dim, heads=4, concat=False, edge_dim=edge_dims[edge_type])
                 for edge_type in data.edge_types
             }
             conv = HeteroConv(conv_map, aggr="sum").to(h_dict["End_Action"].device)
@@ -188,7 +188,7 @@ class SingleActionRelGraph(nn.Module):
                     edge_dims[edge_type] = 1
 
             conv_map = {
-                edge_type: TransformerConv((-1, -1), self.hidden_dim, heads=1, edge_dim=edge_dims[edge_type])
+                edge_type: TransformerConv((-1, -1), self.hidden_dim, heads=4, concat=False, edge_dim=edge_dims[edge_type])
                 for edge_type in data.edge_types
             }
             conv = HeteroConv(conv_map, aggr="sum").to(h_dict["Action"].device)
