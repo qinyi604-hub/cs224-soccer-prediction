@@ -26,6 +26,9 @@ def main() -> None:
     print("Node counts:", meta["node_counts"]) 
     print("Node feature dims:", meta["node_feature_dims"]) 
     print("Edge counts:", meta["edge_counts"]) 
+    print()
+    # Quick training demo for next action type prediction
+    runner.train_demo()
 
 
 if __name__ == "__main__":
