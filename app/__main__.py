@@ -1,5 +1,6 @@
 from app.pipeline.pipeline_runner import PipelineRunner
 from app.pipeline.data_loader import DataCsvLoader
+from app.pipeline.graph_visualizer import GraphVisualizer
 
 
 def main() -> None:
@@ -29,6 +30,8 @@ def main() -> None:
     print()
     # Quick training demo for next action type prediction
     runner.train_demo()
+    # Graph visualization (small subset)
+    GraphVisualizer().visualize_graph(graph, max_actions=150)
 
 
 if __name__ == "__main__":
