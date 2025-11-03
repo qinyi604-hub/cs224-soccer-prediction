@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
-from .data_loader import DataCsvLoader
-from .graph_builder import HeteroGraph, HeteroGraphBuilder
-from .pyg_builder import build_pyg_data
+from app.utils.data_loader import DataCsvLoader
+from app.utils.graph_builder import HeteroGraph, HeteroGraphBuilder
+from app.utils.pyg_builder import build_pyg_data
 from .trainer import train_next_action_model
 
 

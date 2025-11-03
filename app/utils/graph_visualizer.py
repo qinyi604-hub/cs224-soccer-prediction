@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from .graph_builder import HeteroGraph
+from app.utils.graph_builder import HeteroGraph
 
 
 class GraphVisualizer:

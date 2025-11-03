@@ -6,8 +6,8 @@ from typing import Dict, Optional, Tuple
 import pandas as pd
 import torch
 
-from .config import GraphConfig
-from .data_loader import DataCsvLoader
+from app.utils.config import GraphConfig
+from app.utils.data_loader import DataCsvLoader
 
 
 def to_snake_case(name: str) -> str:
