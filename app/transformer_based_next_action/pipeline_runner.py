@@ -23,7 +23,7 @@ class TransformerRunner:
         self.loader = loader or DataCsvLoader()
         self.cfg = cfg or GraphConfig()
 
-    def _pretrain_sequence(self, k: int = 32, epochs: int = 5, batch_size: int = 128, lr: float = 1e-3):
+    def _pretrain_sequence(self, k: int = 32, epochs: int = 20, batch_size: int = 128, lr: float = 1e-3):
         dataset = ActionsSequenceDataset(self.loader, self.cfg, k=k)
         if len(dataset) == 0:
             print("No sequences; adjust num_games or k.")
@@ -67,9 +67,9 @@ class TransformerRunner:
             print(f"Pretrain Seq Epoch {epoch+1}/{epochs} - loss {running/max(1,len(loader)):.4f} acc {correct/max(1,total):.4f}")
         return model, dataset
 
-    def train_graph_transformer(self, epochs: int = 3, lr: float = 1e-3, num_layers: int = 5, k_hops: int = 5, batch_size: int = 1024, pretrain_epochs: int = 5, k: int = 32) -> float:
+    def train_graph_transformer(self, epochs: int = 3, lr: float = 1e-3, num_layers: int = 5, k_hops: int = 5, batch_size: int = 1024, pretrain_epochs: int = 5, k_pretrain: int = 32) -> float:
         # Pretrain sequence model and transfer embeddings
-        seq_model, seq_dataset = self._pretrain_sequence(k=k, epochs=pretrain_epochs, batch_size=256, lr=lr)
+        seq_model, seq_dataset = self._pretrain_sequence(k=k_pretrain, epochs=pretrain_epochs, batch_size=256, lr=lr)
 
         # Build single-node hetero graph and train
         builder = HeteroGraphBuilderSingle(self.loader, self.cfg)

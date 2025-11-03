@@ -46,7 +46,15 @@ def main() -> None:
         # Graph visualization (small subset)
         GraphVisualizer().visualize_graph(graph, max_actions=150)
     elif args.model == "transformer_based_next_action":
-        acc = TransformerRunner().train_graph_transformer(epochs=50, lr=1e-3, num_layers=5)
+        acc = TransformerRunner().train_graph_transformer(
+            epochs=50,
+            lr=1e-3,
+            num_layers=5,
+            k_hops=5,
+            batch_size=1024,
+            pretrain_epochs=20,
+            k_pretrain=5,
+        )
         print(f"Graph Transformer validation accuracy: {acc:.3f}")
     else:
         print(f"Unknown model: {args.model}. Supported: relational_nn, transformer_based_next_action")
