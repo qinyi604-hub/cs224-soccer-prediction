@@ -47,13 +47,13 @@ def main() -> None:
         GraphVisualizer().visualize_graph(graph, max_actions=150)
     elif args.model == "transformer_based_next_action":
         acc = TransformerRunner().train_graph_transformer(
-            epochs=50,
+            epochs=30,
             lr=1e-3,
-            num_layers=5,
-            k_hops=5,
+            num_layers=3,
+            k_hops=3,
             batch_size=1024,
             pretrain_epochs=20,
-            k_pretrain=5,
+            k_pretrain=3,
         )
         print(f"Graph Transformer validation accuracy: {acc:.3f}")
     else:

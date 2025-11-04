@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
+import math
 
 import torch
 from torch.utils.data import DataLoader
@@ -38,7 +39,8 @@ class TransformerRunner:
         model = SequenceTransformer(num_types, num_bodies, num_players, num_teams, d_model=128, nhead=8, num_layers=2)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
-        opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+        # Pretrain with plain CE, Adam, no weight decay, stable LR
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = torch.nn.CrossEntropyLoss()
 
         for epoch in range(epochs):
@@ -154,11 +156,15 @@ class TransformerRunner:
             shuffle=False,
         )
 
-        opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+        # Graph training: revert to simple baseline (plain CE + Adam)
+        opt = torch.optim.Adam(model.parameters(), lr=lr)
+        num_classes_graph = len(vocab["type_name"])  # labels map to this
         loss_fn = torch.nn.CrossEntropyLoss()
 
         epoch_losses = []
         epoch_accs = []
+        epoch_top3 = []
+        epoch_macro_f1 = []
         for epoch in range(epochs):
             model.train()
             running_loss = 0.0
@@ -184,6 +190,10 @@ class TransformerRunner:
             with torch.no_grad():
                 v_total = 0
                 v_correct = 0
+                v_correct_top3 = 0
+                tp = torch.zeros(num_classes_graph, device=device)
+                fp = torch.zeros(num_classes_graph, device=device)
+                fn = torch.zeros(num_classes_graph, device=device)
                 for batch in val_loader:
                     batch = batch.to(device)
                     bs = int(batch[target_ntype].batch_size)
@@ -191,28 +201,55 @@ class TransformerRunner:
                         continue
                     logits = model(batch)[target_ntype][ : bs]
                     y = batch[target_ntype].y[ : bs]
+                    preds = logits.argmax(dim=-1)
+                    _, topk = logits.topk(k=min(3, num_classes_graph), dim=-1)
                     v_total += y.numel()
-                    v_correct += (logits.argmax(dim=-1) == y).sum().item()
+                    v_correct += (preds == y).sum().item()
+                    v_correct_top3 += (topk == y.unsqueeze(-1)).any(dim=-1).sum().item()
+                    for c in range(num_classes_graph):
+                        yc = (y == c)
+                        pc = (preds == c)
+                        tp[c] += (yc & pc).sum()
+                        fp[c] += ((~yc) & pc).sum()
+                        fn[c] += (yc & (~pc)).sum()
                 acc = (v_correct / max(1, v_total))
+                acc_top3 = (v_correct_top3 / max(1, v_total))
+                f1_c = (2 * tp) / torch.clamp(2 * tp + fp + fn, min=1.0)
+                macro_f1 = f1_c.mean().item()
             epoch_losses.append(running_loss / max(1, len(train_loader)))
             epoch_accs.append(acc)
-            print(f"Graph-Transformer Epoch {epoch+1}/{epochs} - loss: {epoch_losses[-1]:.4f} - val_acc: {acc:.4f}")
+            epoch_top3.append(acc_top3)
+            epoch_macro_f1.append(macro_f1)
+            print(
+                f"Graph-Transformer Epoch {epoch+1}/{epochs} - loss: {epoch_losses[-1]:.4f} "
+                f"- val_acc: {acc:.4f} - val_top3: {acc_top3:.4f} - macro_f1: {macro_f1:.4f}"
+            )
+
+            # constant LR (no scheduler)
 
         # Save training curves
         out_dir = Path(__file__).resolve().parents[1] / "output"
         out_dir.mkdir(parents=True, exist_ok=True)
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-        ax1.plot(range(1, len(epoch_losses) + 1), epoch_losses, marker='o')
-        ax1.set_title('Graph Transformer Training Loss')
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Loss')
-        ax1.grid(True, linestyle='--', alpha=0.4)
-        ax2.plot(range(1, len(epoch_accs) + 1), epoch_accs, marker='o')
-        ax2.set_title('Graph Transformer Validation Accuracy')
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('Accuracy')
-        ax2.set_ylim(0.0, 1.0)
-        ax2.grid(True, linestyle='--', alpha=0.4)
+        fig, axs = plt.subplots(1, 3, figsize=(14, 4))
+        axs[0].plot(range(1, len(epoch_losses) + 1), epoch_losses, marker='o')
+        axs[0].set_title('Training Loss')
+        axs[0].set_xlabel('Epoch')
+        axs[0].set_ylabel('Loss')
+        axs[0].grid(True, linestyle='--', alpha=0.4)
+        axs[1].plot(range(1, len(epoch_accs) + 1), epoch_accs, marker='o', label='Top-1')
+        axs[1].plot(range(1, len(epoch_top3) + 1), epoch_top3, marker='s', label='Top-3')
+        axs[1].set_title('Validation Accuracy')
+        axs[1].set_xlabel('Epoch')
+        axs[1].set_ylabel('Accuracy')
+        axs[1].set_ylim(0.0, 1.0)
+        axs[1].legend()
+        axs[1].grid(True, linestyle='--', alpha=0.4)
+        axs[2].plot(range(1, len(epoch_macro_f1) + 1), epoch_macro_f1, marker='o', color='tab:green')
+        axs[2].set_title('Validation Macro-F1')
+        axs[2].set_xlabel('Epoch')
+        axs[2].set_ylabel('Macro-F1')
+        axs[2].set_ylim(0.0, 1.0)
+        axs[2].grid(True, linestyle='--', alpha=0.4)
         fig.tight_layout()
         out_path = out_dir / "training_result_graph_transformer.png"
         fig.savefig(str(out_path), dpi=150)
