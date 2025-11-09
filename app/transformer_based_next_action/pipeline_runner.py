@@ -110,17 +110,32 @@ class TransformerRunner:
             with _torch.no_grad():
                 model.action_body_emb.weight.data.copy_(seq_model.body_emb.weight.data[body_src_idx])
 
+        # Split by game: train on some games, validate on held-out games
         y_full = data[target_ntype].y
-        mask = y_full >= 0
-        seed_idx = torch.nonzero(mask, as_tuple=False).view(-1)
-        if seed_idx.numel() == 0:
-            print("No labeled End_Action nodes.")
+        if not hasattr(data[target_ntype], "game_id"):
+            print("Missing game_id on nodes; cannot split by game.")
             return 0.0
-        num_train = int(0.8 * seed_idx.numel())
-        g = torch.Generator().manual_seed(42)
-        perm = torch.randperm(seed_idx.numel(), generator=g)
-        train_seeds = seed_idx[perm[:num_train]]
-        val_seeds = seed_idx[perm[num_train:]]
+        game_ids = data[target_ntype].game_id
+        # unique game indices
+        unique_games = torch.unique(game_ids.cpu())
+        if unique_games.numel() < 2:
+            print("Not enough distinct games for a train/val split.")
+            return 0.0
+        # deterministic split
+        g = torch.Generator().manual_seed(self.cfg.random_seed)
+        perm_g = torch.randperm(unique_games.numel(), generator=g)
+        num_train_games = max(1, int(0.8 * unique_games.numel()))
+        train_game_ids = unique_games[perm_g[:num_train_games]].to(game_ids.device)
+        val_game_ids = unique_games[perm_g[num_train_games:]].to(game_ids.device)
+
+        valid_label_mask = (y_full >= 0)
+        train_mask = valid_label_mask & torch.isin(game_ids, train_game_ids)
+        val_mask = valid_label_mask & torch.isin(game_ids, val_game_ids)
+        train_seeds = torch.nonzero(train_mask, as_tuple=False).view(-1)
+        val_seeds = torch.nonzero(val_mask, as_tuple=False).view(-1)
+        if train_seeds.numel() == 0 or val_seeds.numel() == 0:
+            print(f"Empty split by game (train={train_seeds.numel()}, val={val_seeds.numel()}).")
+            return 0.0
 
         # Neighbor sampling: temporal past along precededBy (K hops), plus side hops for Player and Team
         num_neighbors = {}

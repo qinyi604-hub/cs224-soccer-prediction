@@ -60,6 +60,8 @@ class HeteroGraphBuilderSingle:
             "result_name": actions.get("result_name", pd.Series([None]*len(actions))).astype("string"),
             "bodypart_name": actions["bodypart_name"].astype("string"),
             "is_home_team": is_home.astype("int64"),
+            # carry game id for train/val split by game
+            cfg.actions_game_id_col: actions[cfg.actions_game_id_col].astype("string"),
         })[cfg.action_features]
         return action_df
 

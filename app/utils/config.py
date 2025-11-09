@@ -47,6 +47,8 @@ class GraphConfig:
             "result_name",
             "bodypart_name",
             "is_home_team",
+            # include for splitting/train-val by game
+            "game_id",
         ]
     )
     end_action_features: List[str] = field(
