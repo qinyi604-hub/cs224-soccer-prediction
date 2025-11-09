@@ -47,6 +47,8 @@ class GraphConfig:
             "result_name",
             "bodypart_name",
             "is_home_team",
+            # include for splitting/train-val by game
+            "game_id",
         ]
     )
     end_action_features: List[str] = field(
@@ -96,7 +98,7 @@ class GraphConfig:
     games_away_team_id_col: str = "away_team_id"
 
     # Sampling controls
-    num_games: Optional[int] = 200
+    num_games: Optional[int] = 500
     random_seed: int = 42
 
     # Unknown player handling

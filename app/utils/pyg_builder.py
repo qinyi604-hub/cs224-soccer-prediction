@@ -48,6 +48,11 @@ def build_pyg_data(graph: HeteroGraph) -> Tuple[HeteroData, Dict[str, Dict[str, 
         data["Action"].body_idx = act_body_idx
         vocab["type_name"] = act_type_map
         vocab["bodypart_name_action"] = act_body_map
+        # Game id categorical (for train/val split by game)
+        if "game_id" in action_df.columns:
+            game_idx, game_map = _encode_categorical(action_df["game_id"])  # type: ignore
+            data["Action"].game_id = game_idx
+            vocab["game_id"] = game_map
         data["Player"].num_nodes = player_df.shape[0]
         data["Team"].num_nodes = team_df.shape[0]
 
