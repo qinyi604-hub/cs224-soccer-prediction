@@ -2,17 +2,18 @@ from app.relational_nn.pipeline_runner import PipelineRunner
 from app.utils.data_loader import DataCsvLoader
 from app.utils.graph_visualizer import GraphVisualizer
 from app.transformer_based_next_action.pipeline_runner import TransformerRunner
+from app.graph_transformer_poc_2.pipeline_runner import GraphTransformerPoC2Runner
 import argparse
 import sys
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run model pipelines (relational_nn or transformer_based_next_action)")
+    parser = argparse.ArgumentParser(description="Run model pipelines (relational_nn | transformer_based_next_action | graph_transformer_poc_2)")
     parser.add_argument(
         "--model",
         type=str,
         default="relational_nn",
-        help="Model to run: relational_nn | transformer_based_next_action",
+        help="Model to run: relational_nn | transformer_based_next_action | graph_transformer_poc_2",
     )
     args = parser.parse_args(sys.argv[1:])
 
@@ -56,8 +57,19 @@ def main() -> None:
             k_pretrain=5,
         )
         print(f"Graph Transformer validation accuracy: {acc:.3f}")
+    elif args.model == "graph_transformer_poc_2":
+        acc = GraphTransformerPoC2Runner().train(
+            epochs=20,
+            lr=1e-3,
+            embed_dim=128,
+            heads=4,
+            num_layers=4,
+            pos_enc_dim=8,
+            max_path_hops=3,
+        )
+        print(f"Graph Transformer PoC2 validation accuracy: {acc:.3f}")
     else:
-        print(f"Unknown model: {args.model}. Supported: relational_nn, transformer_based_next_action")
+        print(f"Unknown model: {args.model}. Supported: relational_nn, transformer_based_next_action, graph_transformer_poc_2")
 
 
 if __name__ == "__main__":
